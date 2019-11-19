@@ -1,0 +1,9 @@
+# freecad
+*.FCStd1
+
+# python
+*.pyc
+
+# vi temporary files:
+*~
+*.swp
