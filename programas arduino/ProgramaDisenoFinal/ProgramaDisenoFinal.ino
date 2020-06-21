@@ -55,9 +55,10 @@ LiquidCrystal lcd(16,17,23,25,27,29);
       bool derecha, izquierda, pulsador = false;                             // variables de lectura del encoder interpretadas
       int volatile estado,estado_ant  = 0;                                   // Variables del estado (valores de 0 a 5)
       int posicion = 0;                                                      // Variable de posicion en la pantalla lcd
-      int i,j,k = 0 ;                                                        // diversos contadores
+      int i,j,k,t = 0 ;                                                      // diversos contadores
       int volatile di,df,v= 0;                                               // variables del ensayo (distancia inicial, distancia final, velocidad)
-      long x, x_ant= 0 ;                                                            // variable de la distancia puntual (en micras)
+      long x, x_mm= 0 ;                                                      // variable de la distancia puntual (en micras)
+      bool activado = true;                                                 // variable que indica la señal que envia un fin de carrera al activarse
 void setup() {
   
       pinMode(BTN_EN1,INPUT_PULLUP);    // Encoder 1
@@ -78,33 +79,47 @@ void setup() {
       lcd.createChar(0, empty);
       lcd.createChar(1,  full);
       lcd.createChar(2, micro);
+
+      lcd.clear();
+      lcd.setCursor(1,0);
+      lcd.print("ENSAYO DE MODELO");
+      lcd.setCursor(1,1);
+      lcd.print("ANALOGO");
+      lcd.setCursor(1,3);
+      lcd.print("iniciar experimento");
 }
 /////////////////ESTADOS//////////////////////////////////////////////////
 void inicio()////////INICIO, estado 0/////////////////////////////////////
-{
-      
-      if (pulsador == true)
+{     
+ 
+ if (pulsador == true)
       {
         
         estado=1;
         estado_ant = 0;
 
-        j,k=0;
+        j,k,posicion=0;
+        di=0;
+        df= 0;
+        v = 0;
+        x=0;
+        x_mm= 0;
         
         lcd.clear();
         lcd.setCursor(1,0);
-        lcd.print("dist. inicial");
+        lcd.print("dist. inic");
         lcd.setCursor(18,0);
         lcd.print("mm");
         lcd.setCursor(1,1);
         lcd.print("dist.final");
-        lcd.setCursor(18,0);
+        lcd.setCursor(18,1);
         lcd.print("mm");
         lcd.setCursor(1,2);      
         lcd.print("velocidad");
-        lcd.setCursor(18,2);
+        lcd.setCursor(16,2);
         lcd.write(byte(2));
-        lcd.print("m");
+        lcd.setCursor(17,2);
+        lcd.print("m/s");
         lcd.setCursor(1,3);     
         lcd.print("iniciar experimento");
         
@@ -113,246 +128,212 @@ void inicio()////////INICIO, estado 0/////////////////////////////////////
 void DefinicionDeVariables()////DEFINICION DE VARIABLES , estado 1//////////
 {
   lcd.setCursor(0,0);
-  lcd.print(byte(1));
+  lcd.write(byte(0));
   lcd.setCursor(0,1);
-  lcd.print(byte(1));
+  lcd.write(byte(0));
   lcd.setCursor(0,2);
-  lcd.print(byte(1));
+  lcd.write(byte(0));
   lcd.setCursor(0,3);
-  lcd.print(byte(1));
+  lcd.write(byte(0));
   lcd.setCursor(0,posicion);
-  lcd.print(byte(2));
-  lcd.setCursor(14,0);
-  lcd.print("   ");
-  lcd.setCursor(14,0);
+  lcd.write(byte(1));
+  lcd.setCursor(12,0);
+  lcd.print("---");
+  lcd.setCursor(12,0);
   lcd.print(di);
-  lcd.setCursor(14,1);
-  lcd.print("  ");
-  lcd.setCursor(14,1);
+  lcd.setCursor(12,1);
+  lcd.print("---");
+  lcd.setCursor(12,1);
   lcd.print(df);
-  lcd.setCursor(14,2);
-  lcd.print("  ");
-  lcd.setCursor(14,2);
+  lcd.setCursor(12,2);
+  lcd.print("---");
+  lcd.setCursor(12,2);
   lcd.print(v);
-  
+  if (df< di)
+  {
+    df=di;
+  }
+
+  if (pulsador == true  and k<3) //k es una variable que avanza en horizontal por la pantalla, cuando vale 0 podemos cambia en vertical con derecha o izquierda, cuando no aumentamos la variable con la que estemos trabajando
+  {
+    k++;
+  }
+  else if (pulsador == true and k==3)
+  {
+    k=0;
+  }
   switch (posicion) 
   {
-   case 0://posicion 0
-        
-       switch (k)
-      {
-          case 1: //posicion 0, k1
-            if (pulsador == true)
-            {
-              k++;
-            }
-            
-             if (derecha == true and di+100<400)
-             {
-              di=di+100;
-             }
-             else if (izquierda == true and di-100>0)
-             {
-              di=di-100;
-             }
-            
+    case 1: 
+        switch (k)
+        {
+          case 1://posicion =1, k=1
+                if (derecha == true and df+100<400)
+                {
+                  df = df + 100;
+                }
+                else if (izquierda == true and df-100 >= 0)
+                {
+                  df = df-100;
+                }
           break;
-          case 2: //posicion 0 , k2
-            if (pulsador == true)
-            {
-              k++;
-            }  
-              if (derecha == true and di+10 < 400)
-              {
-               di=di+10;
-              }
-              else if (izquierda == true and di-100>0)
-              {
-               di=di-10;
-              }
-            
-          break;
-          case 3: //posicion 0 , k3
-            if (pulsador == true and k==3)
-              {
-                k=0;
-              }      
-             if (derecha == true and di+1<400)
-             {
-              di=di+1;
-             }
-             else if (izquierda == true and di-1 > 0)
-             {
-              di=di-1;
-             }
-        
-          break;
-          default: //posicion 0, k0
-            if (derecha == true)
-            {
-              posicion++;
-            }
-            else if( izquierda == true)
-            {
-              posicion=posicion-1;
-            }
-          break;
-      break;
-      }
-    case 1: //posicion 1
-      switch (k)
-      {
-          case 1: //posicion 1 ,k1
-            if (pulsador == true )
-            {
-              k++;
-            }
-            if (derecha == true and df+100<400)
-            {
-              df=df+100;
-            }
-            else if (izquierda == true and df-100>di)
-            {
-              df=df-100;
-            }
-              
-          break;
-          case 2: //posicion 1 , k2
-            if (pulsador == true )
-            {
-              k++;
-            }    
-            if (derecha == true and df+10<400)
-            {
-               df=df+10;
-            }
-            else if (izquierda == true and df-10 > di)
-            {
-               df=df-10;
-            }
-                  
-          break;
-          case 3: //posicion 1, k3
-            if (pulsador == true and k==3)
-              {
-                k=0;
-              }
-                     
-            if (derecha == true and df+1 <400)
-            {
-              df=df+1;
-            }
-            else if (izquierda == true and df-1>di)
-            {
-              df=df-1;
-            }
-              
-          break;
-          default: //posicion 1, k0 
-            if (derecha == true)
-            {
-              posicion++;
-            }
-            else if( izquierda == true)
-            {
-              posicion=posicion-1;
-            }
-          break;
-      break;
-      }
-    case 2://posicion 2
-      switch (k)
-      {
-        
-          case 1 :// posicion 2, k1
-            if (pulsador == true )
-            {
-              k++;
-            }
-             if (derecha == true and v+100 <150)
-             {
-              v=v+100;
-             }
-             else if (izquierda == true and v-100 > 0)
-             {
-              v=v-100;
-             }
-            
-          break;
-          case 2 :// posicion 2, k2
-            if (pulsador == true )
-            {
-              k++;
-            }
-               
-             if (derecha == true and v+10 <150)
-             {
-              v=v+10;
-             }
-             else if (izquierda == true  and v-10 >0)
-             {
-              v=v-10;
-             }
-            
-          break;
-          case 3 :// posicion 2, k3
-                       
-             if (derecha == true and v+1<150)
-             {
-                v=v+1;
-             }
-             else if (izquierda == true and v-1>0)
-             {
-                v=v-1;
-             }
-          
-          break;
-          default: //posicion 3, k0
-            if (derecha == true)
-            {
-              posicion++;
-            }
-            else if( izquierda == true)
-            {
-              posicion=posicion-1;
-            }
-          break;   
-      break;
-      }
-    default: //posicion 3
-      if(pulsador == true)
-      {
-              estado=2;
-              estado_ant=1;
-              
-              lcd.clear();
-              lcd.setCursor(1,0);
-              lcd.print("PREPARANDO");
-              lcd.setCursor(1,1);
-              lcd.print("EXPERIMENTO...");
-              lcd.setCursor(9,2);
-              lcd.print("/");
-              lcd.print(di*1000);
-              lcd.print(" ");
-              lcd.write(byte(2));
-              lcd.print("m"); 
-
-              j,k= 0;
-      }
-     break;
-        
-        
+          case 2: //posicion = 1, k=2
+                if (derecha == true and df+10<400)
+                {
+                  df = df + 10;
+                }
+                else if (izquierda == true and df-10 >= 0)
+                {
+                  df = df-10;
+                }
+           break;
+           case 3: //posicion = 1, k =3
+                if (derecha == true and df+1<400)
+                {
+                  df = df + 1;
+                }
+                else if (izquierda == true and df-1 >= 0)
+                {
+                  df = df-1;
+                }
+           break;
+           default:
+                if (derecha == true )
+                {
+                  posicion = 2;
+                }
+                else if (izquierda == true)
+                {
+                  posicion = 0;
+                }
+            break;
         }
+
+    break;
+    case 2:
+     if ( k>1 or k== 0 )
+     {
+      k==0;
+             if (derecha == true )
+                {
+                  posicion = 3;
+                }
+             else if (izquierda == true)
+                {
+                  posicion = 1;
+                }
+     }
+     else 
+     {
+             if (derecha == true and t<15 )
+                {
+                  t++;
+                }
+             else if (izquierda == true and t>0)
+                {
+                  t=t-1;
+                }
+             v= 234.35 / t ;
+     }
+     
+
+        
+    break;
+    case 3:
+ 
+              if( pulsador == true)
+              {
+                estado=2;
+                estado_ant=1;
+                
+                lcd.clear();
+                lcd.setCursor(1,0);
+                lcd.print("PREPARANDO");
+                lcd.setCursor(1,1);
+                lcd.print("EXPERIMENTO...");
+                lcd.setCursor(9,2);
+                lcd.print("/");
+                lcd.print(di);
+                lcd.print("000");
+                lcd.print(" ");
+                lcd.write(byte(2));
+                lcd.print("m"); 
+                j,k = 0;
+              }
+    
+    
+              if (derecha == true )
+                {
+                  posicion = 0;
+                  k=0;
+                }
+              else if (izquierda == true)
+                {
+                  posicion = 2;
+                  k=0;
+                }
+
+    break;
+    default:
+    switch (k)
+        {
+          case 1://posicion =0, k=1
+                if (derecha == true and di+100<400)
+                {
+                  di = di + 100;
+                }
+                else if (izquierda == true and di-100 >= 0)
+                {
+                  di = di-100;
+                }
+          break;
+          case 2: //posicion = 0, k=2
+                if (derecha == true and di+10<400)
+                {
+                  di = di + 10;
+                }
+                else if (izquierda == true and di-10 >= 0)
+                {
+                  di = di-10;
+                }
+           break;
+           case 3: //posicion = 0, k =3
+                if (derecha == true and di+1<400)
+                {
+                  di = di + 1;
+                }
+                else if (izquierda == true and di-1 >= 0)
+                {
+                  di = di-1;
+                }
+           break;
+           default:
+                if (derecha == true )
+                {
+                  posicion = 2;
+                }
+                else if (izquierda == true)
+                {
+                  posicion = 0;
+                }
+            break;
+        }
+
+    break;
+
   }
+  
+ }
 void preparacion()/////////////PREPARACION, estado 2////////////////////////
 {
-  if(x<di*1000)
+if(x_mm < di and fc_fin_X != activado)
   {
     pulso_X=!pulso_X;
     dirreccion_X=true;
     if (pulso_X = true);
     {
       j++;
+      delay(1);
     }
     if(j>61)
     {
@@ -361,7 +342,22 @@ void preparacion()/////////////PREPARACION, estado 2////////////////////////
       lcd.setCursor(3,2);
       lcd.print("      ");
       lcd.setCursor(3,2);
+      lcd.print(x_mm);
+       if(x<100)
+      {
+        if(x<10)
+        {
+          lcd.print("0");
+        }
+        lcd.print("0");
+      }
       lcd.print(x);
+      delay(1);
+    }
+    if (x > 1000)
+    {
+      x= x-1000;
+      x_mm = x_mm+1;
     }
     if (pulsador == true)
     {
@@ -369,18 +365,69 @@ void preparacion()/////////////PREPARACION, estado 2////////////////////////
     dirreccion_X=true;
     estado = 4;
     estado_ant = 2;
-    
     lcd.clear();
     lcd.setCursor(1,0);
-    lcd.print("¿deseas continuar?");
+    lcd.print("PAUSA");
     lcd.setCursor(2,2);
-    lcd.print("si, continuar");
+    lcd.print(" continuar");
     lcd.setCursor(2,3);
-    lcd.print("no, terminar");
+    lcd.print(" terminar");
+    lcd.setCursor(2,1);
+    lcd.print(x_mm);
+    if(x<100)
+      {
+        if(x<10)
+        {
+          lcd.print("0");
+        }
+        lcd.print("0");
+      }
+    lcd.print(x);
+    lcd.print("/");
+    lcd.print(di);
+    lcd.print("000");
+    lcd.print(" ");
+    lcd.write(byte(2));
+    lcd.print("m"); 
+    posicion = 1; 
     }
-    
+      
+        
     
   }
+  else if (fc_fin_X == activado)
+  {
+    pulso_X=false;
+    dirreccion_X=true;
+    estado = 4;
+    estado_ant = 5;
+    lcd.clear();
+    lcd.setCursor(1,0);
+    lcd.print("PAUSA");
+    lcd.setCursor(2,2);
+    lcd.print(" terminar");
+    lcd.setCursor(2,3);
+    lcd.print(" terminar");
+    lcd.setCursor(2,1);
+    lcd.print(x_mm);
+     if(x<100)
+      {
+        if(x<10)
+        {
+          lcd.print("0");
+        }
+        lcd.print("0");
+      }
+    lcd.print(x);
+    lcd.print("/");
+    lcd.print(df);
+    lcd.print("000");
+    lcd.print(" ");
+    lcd.write(byte(2));
+    lcd.print("m");
+    posicion = 1; 
+  }
+  
   else
   {
     pulso_X=false;
@@ -389,48 +436,102 @@ void preparacion()/////////////PREPARACION, estado 2////////////////////////
     estado_ant = 3;
     lcd.clear();
     lcd.setCursor(1,0);
-    lcd.print("¿deseas continuar?");
+    lcd.print("PAUSA");
     lcd.setCursor(2,2);
-    lcd.print("si, continuar");
+    lcd.print(" continuar");
     lcd.setCursor(2,3);
-    lcd.print("no, terminar");
+    lcd.print(" terminar");
+    lcd.setCursor(2,1);
+    lcd.print(x_mm);
+     if(x<100)
+      {
+        if(x<10)
+        {
+          lcd.print("0");
+        }
+        lcd.print("0");
+      }
+    lcd.print(x);
+    lcd.print("/");
+    lcd.print(di);
+    lcd.print("000");
+    lcd.print(" ");
+    lcd.write(byte(2));
+    lcd.print("m"); 
+    posicion = 1; 
   }
 }
-void accion()//////////////////ACCION, estado 3/////////////////////////////
+void accion()/////////////////////ACCION estado (3)///////////////////////////////////////
 {
-    if(x<df*1000 and fc_fin_X== false)
+if(x_mm < df and fc_fin_X != activado)
   {
     pulso_X=!pulso_X;
     dirreccion_X=true;
-    delay(234/v);
     if (pulso_X = true);
     {
       j++;
-     
+      delay(t);
     }
-    if(j>63)
+    if(j>61)
     {
       x=x+15;
       j=0;
-      lcd.setCursor(2,2);
+      lcd.setCursor(3,2);
       lcd.print("      ");
-      lcd.setCursor(2,2);
-      lcd.print(x); 
+      lcd.setCursor(3,2);
+      lcd.print(x_mm);
+      if(x<100)
+      {
+        if(x<10)
+        {
+          lcd.print("0");
+        }
+        lcd.print("0");
+      }
+      lcd.print(x);
+      delay(t);
+    }
+    if (x > 1000)
+    {
+      x= x-1000;
+      x_mm = x_mm+1;
     }
     if (pulsador == true)
     {
-    
+    pulso_X=false;
     dirreccion_X=true;
+    
     estado = 4;
     estado_ant = 3;
     lcd.clear();
     lcd.setCursor(1,0);
-    lcd.print("¿deseas continuar?");
+    lcd.print("PAUSA");
     lcd.setCursor(2,2);
-    lcd.print("si, continuar");
+    lcd.print(" continuar");
     lcd.setCursor(2,3);
-    lcd.print("no, terminar");
+    lcd.print(" terminar");
+    lcd.setCursor(2,1);
+    lcd.print(x_mm);
+     if(x<100)
+      {
+        if(x<10)
+        {
+          lcd.print("0");
+        }
+        lcd.print("0");
+      }
+    lcd.print(x);
+    lcd.print("/");
+    lcd.print(df);
+    lcd.print("000");
+    lcd.print(" ");
+    lcd.write(byte(2));
+    lcd.print("m"); 
+    posicion = 1; 
     }
+      
+        
+    
   }
   else
   {
@@ -440,163 +541,255 @@ void accion()//////////////////ACCION, estado 3/////////////////////////////
     estado_ant = 5;
     lcd.clear();
     lcd.setCursor(1,0);
-    lcd.print("el ensayo ha");
-    lcd.setCursor(1,1);
-    lcd.print("terminado");
-    lcd.setCursor(1,2);
-    lcd.write(byte(1));
-    lcd.print(" finalizar");
+    lcd.print("PAUSA");
+    lcd.setCursor(2,2);
+    lcd.print(" terminar");
+    lcd.setCursor(2,3);
+    lcd.print(" terminar");
+    lcd.setCursor(2,1);
+    lcd.print(x_mm);
+     if(x<100)
+      {
+        if(x<10)
+        {
+          lcd.print("0");
+        }
+        lcd.print("0");
+      }
+    lcd.print(x);
+    lcd.print("/");
+    lcd.print(df);
+    lcd.print("000");
+    lcd.print(" ");
+    lcd.write(byte(2));
+    lcd.print("m");
+    posicion = 1; 
   }
 }
-
-void pausa()///////////////////PAUSA, estado 4 /////////////////////////////
+void pausa()////////////////PAUSA estado(4)////////////////////////////////////////
 {
-  switch (estado_ant)
+
+if (derecha == true or izquierda == true  )
+{
+  if (posicion == 1)
   {
-  case 2:
+    posicion = 2;
+  }
+  else
+  {
+    posicion = 1;
+  }
+}
+if (posicion == 1)
+{
+lcd.setCursor(1,2);
+lcd.write(byte(1));
+lcd.setCursor(1,3);
+lcd.write(byte(0));
+           if (pulsador == true and estado_ant ==2)
+           {
+                          estado=2;
+                          estado_ant=1;
+                          
+                          lcd.clear();
+                          lcd.setCursor(1,0);
+                          lcd.print("PREPARANDO");
+                          lcd.setCursor(1,1);
+                          lcd.print("EXPERIMENTO...");
+                          lcd.setCursor(9,2);
+                          lcd.print("/");
+                          lcd.print(di);
+                          lcd.print("000");
+                          lcd.print(" ");
+                          lcd.write(byte(2));
+                          lcd.print("m"); 
+                          j,k = 0;
+           }
+           else if (pulsador == true and estado_ant == 3)
+           {
+                          estado=3;
+                          estado_ant=1;
+                          
+                          lcd.clear();
+                          lcd.setCursor(1,0);
+                          lcd.print("REALIZANDO");
+                          lcd.setCursor(1,1);
+                          lcd.print("EXPERIMENTO...");
+                          lcd.setCursor(9,2);
+                          lcd.print("/");
+                          lcd.print(df);
+                          lcd.print("000");
+                          lcd.print(" ");
+                          lcd.write(byte(2));
+                          lcd.print("m"); 
+                          j,k = 0;
+            
+           }
+           else if (pulsador == true and estado_ant ==5)
+           {
+                          estado=5;
+                          estado_ant=1;
+                          
+                          lcd.clear();
+                          lcd.setCursor(1,0);
+                          lcd.print("EXPERIMENTO");
+                          lcd.setCursor(1,1);
+                          lcd.print("TERMINADO");
+                          lcd.setCursor(9,2);
+                          lcd.print("/");
+                          lcd.print("000000");
+                          lcd.print(" ");
+                          lcd.write(byte(2));
+                          lcd.print("m"); 
+                          j,k = 0;
+            
+           }
+}
+else
+{
+ lcd.setCursor(1,2);
+ lcd.write(byte(0));
+ lcd.setCursor(1,3);
+ lcd.write(byte(1));
+   if (pulsador == true )
+           {
+                          estado=5;
+                          estado_ant=1;
+                          
+                          lcd.clear();
+                          lcd.setCursor(1,0);
+                          lcd.print("EXPERIMENTO");
+                          lcd.setCursor(1,1);
+                          lcd.print("TERMINADO");
+                          lcd.setCursor(9,2);
+                          lcd.print("/");
+                          lcd.print("000000");
+                          lcd.print(" ");
+                          lcd.write(byte(2));
+                          lcd.print("m"); 
+                          j,k = 0;
+            
+           }
+}
+}
+void reinicio()//////////REINICIO estado (5)////////////////////////////////////////////////
+{
+
+  if (pulsador  == true)
+  {
+    
+    pulso_X=false;
+    dirreccion_X=true;
+    estado = 4;
+    estado_ant = 5;
+    lcd.clear();
+    lcd.setCursor(1,0);
+    lcd.print("PAUSA");
+    lcd.setCursor(2,2);
+    lcd.print(" terminar");
+    lcd.setCursor(2,3);
+    lcd.print(" terminar");
+    lcd.setCursor(2,1);
+    lcd.print(x_mm);
+     if(x<100)
+      {
+        if(x<10)
+        {
+          lcd.print("0");
+        }
+        lcd.print("0");
+      }
+    lcd.print(x);
+    lcd.print("/");
+    lcd.print(df);
+    lcd.print("000");
+    lcd.print(" ");
+    lcd.write(byte(2));
+    lcd.print("m");
+    posicion = 1; 
+  }
+  if (x_mm <1 and x < 40 or fc_inic_X != activado )
   
-        lcd.setCursor(1,2);
-        lcd.write(byte(0));
-        lcd.setCursor(1,3);
-        lcd.write(byte(0));
-        lcd.setCursor(1, posicion);
-        lcd.write(byte(1));
-    if (posicion= 2)
-    {
-       if (pulsador == true)
-       {
-        estado== estado_ant;
-        lcd.clear();
-        lcd.setCursor(1,0);
-        lcd.print("PREPARANDO");
-        lcd.setCursor(1,1);
-        lcd.print("EXPERIMENTO...");
-        lcd.setCursor(9,2);
-        lcd.print("/");
-        lcd.print(di*1000);
-        lcd.print(" ");
-        lcd.write(byte(2));
-        lcd.print("m"); 
+      {
+            estado=0;
+            estado_ant = 5;
+              
+            lcd.clear();
+            lcd.setCursor(1,0);
+            lcd.print("ENSAYO DE MODELO");
+            lcd.setCursor(1,1);
+            lcd.print("ANALOGO");
+            lcd.setCursor(1,3);
+            lcd.print("iniciar experimento");
 
               j,k= 0;
-        
-       }
-       if (derecha == true or izquierda == true)
-       {
-        posicion = 3;
-       }
-    }
-    else 
-    {
-       if (derecha == true or izquierda == true)
-       {
-        posicion = 3;
-       }
-    }
- break;
- case 3: 
-        lcd.setCursor(1,2);
-        lcd.write(byte(0));
-        lcd.setCursor(1,3);
-        lcd.write(byte(0));
-        lcd.setCursor(1, posicion);
-        lcd.write(byte(1));
-    if (posicion= 2)
-    {
-       if (pulsador == true)
-       {
-        estado== estado_ant;
-        lcd.clear();
-        lcd.setCursor(1,0);
-        lcd.print("realizando");
-        lcd.setCursor(1,1);
-        lcd.print("experimento...");
-        lcd.setCursor(8,2);
-        lcd.print("/");
-        lcd.print(df*1000);
-        lcd.print(" ");
-        lcd.write(byte(2));
-        lcd.print("m");
-        
-       }
-       if (derecha == true or izquierda == true)
-       {
-        posicion = 3;
-       }
-    }
-    else 
-    {
-       if (derecha == true or izquierda == true)
-       {
-        posicion = 3;
-       }
-    }
-break;
-default:
-      lcd.setCursor(1,2);
-      lcd.write(byte(1));
-      if (pulsador == true)
-      {
-        estado = 5;
-        estado_ant=4;
-
-        lcd.clear();
-        lcd.setCursor(0,1);
-        lcd.print("reiniciando");
-        lcd.setCursor(1,1);
-        lcd.print("experimento ...");
-        lcd.setCursor(1,3);
-        lcd.print(x);
-        lcd.setCursor(8,3);
-        lcd.write(byte(2));
-        lcd.print("m");
       }
-break;
-  }    
-  
-}
-void reinicio()////////////////REINICIO, estado 5///////////////////////////
-{
-  pulso_X=!pulso_X;
-  dirreccion_X=false;
-
-  if (pulso_X = true);
-    {
-      j++;
-     
-    }
-    if(j>63)
-    {
-      x=x-15;
-      j=0;
-      lcd.setCursor(1,3);
-      lcd.print(x);
-    }
- 
-  
-  if (fc_inic_X == true or x<0)
+  else 
   {
-      estado=0;
-      estado_ant=5;
-      
-      x,v,di,df,posicion,i,j,k=0;
-      pulso_X,dirreccion_X,derecha,izquierda=false;
-
-      lcd.clear();
-      lcd.setCursor(1,0);
-      lcd.print("ENSAYO DE MODELO");
-      lcd.setCursor(1,1);
-      lcd.print("ANALOGO");
-      lcd.setCursor(1,3);
-      lcd.print("iniciar experimento");
+          pulso_X=!pulso_X;
+          dirreccion_X= false;
+          if (pulso_X = true);
+                {
+                  j++;
+                  delay(1);
+                }
+          if(j>61)
+                {
+                 j=0;
+                 if(x-15 > 0)
+                 {
+                      x=x-15;
+                  
+                 }
+                 else
+                 {
+                      x_mm = x_mm -1;
+                      x= x+985;
+                  }
+                  lcd.setCursor(3,2);
+                  lcd.print("      ");
+                  lcd.setCursor(3,2);
+                  lcd.print(x_mm);
+                  if(x<100)
+                  {
+                      lcd.print("0");
+                  }
+                  lcd.print(x);
+                  delay(1);
+                 if(pulsador == true)
+                    {
+                    pulso_X=false;
+                    dirreccion_X=true;
+                    estado = 4;
+                    estado_ant = 3;
+                    lcd.clear();
+                    lcd.setCursor(1,0);
+                    lcd.print("PAUSA");
+                    lcd.setCursor(2,2);
+                    lcd.print(" continuar");
+                    lcd.setCursor(2,1);
+                    lcd.print(x_mm);
+                    if(x<100)
+                      {
+                        lcd.print("0");
+                      }
+                    lcd.print(x);
+                    lcd.print("/");
+                    lcd.print(df);
+                    lcd.print("000");
+                    lcd.print(" ");
+                    lcd.write(byte(2));
+                    lcd.print("m"); 
+                    posicion = 1;
+                    } 
   }
-      
-      
+  }
 
 }
 ///////////////////////////////////////////////////////////////////////////
 void loop()  // variables de intermedias de salida (izquierda, derecha , pulsador, fc_inic_X, fx_fin_X)
   {
+
       btn_en1 = digitalRead(BTN_EN1);
       btn_en2 = digitalRead(BTN_EN2);
       btn_enc = digitalRead(BTN_ENC); 
@@ -604,22 +797,25 @@ void loop()  // variables de intermedias de salida (izquierda, derecha , pulsado
       fc_fin_X  = digitalRead(X_MAX_PIN);
       digitalWrite(X_STEP_PIN,pulso_X);
       digitalWrite(X_DIR_PIN,dirreccion_X);
-      digitalWrite(BEEPER,pulsador);
-      if (btn_enc == true)//detector de flanco del pulsador/////////////////
+      
+      if (btn_enc == false)//detector de flanco del pulsador/////////////////
       {
         i++;         
       }
       if (i >= 3)
       {
+        digitalWrite(BEEPER,true);
          pulsador = true;
          i=0;
+         delay(200);
+        digitalWrite(BEEPER,false);
       }
       else
       {
         pulsador = false;
       }
       //////////////////////////////////////////////////////////////////////
-      if (btn_en1 != btn_en1_prev || btn_en2 != btn_en2_prev)//discriminacion entre el giro a derecha o izquierda
+      if (btn_en1 != btn_en1_prev || btn_en2 != btn_en2_prev)
       {   
           if ( btn_en2 == false & btn_en1 == false & btn_en2_prev == true & btn_en1_prev == false)
             {
@@ -638,11 +834,13 @@ void loop()  // variables de intermedias de salida (izquierda, derecha , pulsado
               izquierda = false;
                  
             }
+            
       }
-       else
+      else
       {
         derecha = false;
-        izquierda = false;               
+        izquierda = false;
+             
       }
         btn_en1_prev = btn_en1;
         btn_en2_prev = btn_en2;
@@ -668,4 +866,4 @@ void loop()  // variables de intermedias de salida (izquierda, derecha , pulsado
             inicio();
             break;
       }//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  }     
+  } 
